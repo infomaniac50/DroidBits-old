@@ -1,6 +1,10 @@
 package com.gmail.infomaniac50.droidbits;
 
-import randomX.*;
+import java.math.BigInteger;
+import java.util.Locale;
+
+import randomX.randomJava;
+import randomX.randomX;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -14,128 +18,231 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.gmail.infomaniac50.droidbits.R;
 
-public class MainActivity extends Activity implements OnItemSelectedListener {
-	private class RandomAsyncTask extends AsyncTask<randomX, Void, Byte> {
-		@Override
-		protected Byte doInBackground(randomX... params) {
-			byte bytes = 0;
-			randomX bits = params[0];
-			try {
-				bytes = bits.nextByte();
-			}
-			catch (RuntimeException e)
-			{
-				notifyToast(e.getMessage());
-			}
-			
-			return bytes;
-		}
-		
-		@Override
-		protected void onPostExecute(Byte value) {
-			randomString = MainActivity.toHexString(value);
-			txtRandom.setText(randomString);
-		}
+public class MainActivity extends Activity {
+
+	private class RandomAsyncSettings {
+		public randomX randomizer;
+		public int length;
 	}
-	
-	public static String toHexString(byte bytes)
-	{
-		return toHexString(new byte[] {bytes});
-	}
-	
-	public static String toHexString(byte[] bytes) {
-		char[] hexArray = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-		
-		char[] hexChars = new char[bytes.length * 2];
-		
-		int v;
-		
-		for (int j = 0; j < bytes.length; j++) {
-			v = bytes[j] & 0xFF;
-			hexChars[j*2] = hexArray[v/16];
-			hexChars[j*2 + 1] = hexArray[v%16];
-		}
-		
-		return new String(hexChars);
-	}
-	
+
+	final int maxLength = 99;
+
+	ArrayAdapter<CharSequence> spnRandomizerAdapter;
+	ArrayAdapter<CharSequence> spnLengthAdapter;
+	ArrayAdapter<CharSequence> spnNumberBaseAdapter;
+	ArrayAdapter<CharSequence> spnDataMultiplierAdapter;
+
 	ClipboardManager clipper;
+	ClipData clipperData;
+
+	RandomAsyncSettings settings;
+
+	String randomString = "";
+	BigInteger bigValue;
+
+	// <string-array name="spnNumberBaseFormat">
+	// <item>%d</item>
+	// <item>%o</item>
+	// <item>%02X</item>
+	// </string-array>
+	int[] numberBaseArray = new int[] { 10, 8, 16 };
+
+	Spinner spnRandomizer;
+	Spinner spnLength;
+	Spinner spnNumberBase;
+	Spinner spnDataMultiplier;
+
 	TextView txtRandom;
-	Spinner spnRandomSpinner;
-	randomX randomizer;
-	ArrayAdapter<CharSequence> adapter;
-	String randomString;
-	String randomClassString;
-	
-	public void notifyToast(CharSequence message)
-	{
-		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+
+	private void setRandomText() {
+		// StringBuilder randomBuilder = new StringBuilder();
+
+		// String numberBase =
+		// numberBaseArray[spnNumberBase.getSelectedItemPosition()];
+
+		// randomBuilder.append(String.format(numberBase, value));
+
+		// randomString = randomBuilder.toString();
+
+		randomString = bigValue.toString(
+				numberBaseArray[spnNumberBase.getSelectedItemPosition()])
+				.toUpperCase(Locale.US);
+		txtRandom.setText(randomString);
+
 	}
 
-	public void onBtnCopyRandom(View view) {
-		clipper.setPrimaryClip(ClipData.newPlainText("Random Byte", randomString));
-		notifyToast("Data copied to clipboard.");
-	}
-
-	public void onBtnFetchRandom(View view) {
-		new RandomAsyncTask().execute(randomizer);
-	}
-	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
-		txtRandom = (TextView)findViewById(R.id.txtRandom);
-		spnRandomSpinner = (Spinner)findViewById(R.id.spnRandomChooser);
-		
-		adapter = ArrayAdapter.createFromResource(this, R.array.random_array, android.R.layout.simple_spinner_item);
-		
-		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spnRandomSpinner.setAdapter(adapter);
-		spnRandomSpinner.setOnItemSelectedListener(this);
-		
-		randomizer = new randomJava();
-		
-		clipper = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
+
+		settings = new RandomAsyncSettings();
+		clipper = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+
+		// Reference the needed controls
+		txtRandom = (TextView) findViewById(R.id.txtRandom);
+
+		spnRandomizer = (Spinner) findViewById(R.id.spnRandomizer);
+		spnLength = (Spinner) findViewById(R.id.spnLength);
+		spnNumberBase = (Spinner) findViewById(R.id.spnNumberBase);
+		spnDataMultiplier = (Spinner) findViewById(R.id.spnDataMulitplier);
+
+		spnRandomizerAdapter = ArrayAdapter.createFromResource(this,
+				R.array.spnRandomizer, android.R.layout.simple_spinner_item);
+		spnRandomizerAdapter
+				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spnRandomizer.setAdapter(spnRandomizerAdapter);
+		spnRandomizer.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view,
+					int pos, long id) {
+				setRandomizer("randomX.random"
+						+ spnRandomizer.getSelectedItem().toString());
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+				setRandomizer(randomJava.class.toString());
+			}
+		});
+
+		// Make a new adapter for the number of bytes to fetch
+		spnLengthAdapter = new ArrayAdapter<CharSequence>(this,
+				android.R.layout.simple_spinner_item);
+		spnLengthAdapter
+				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+		// Populate the byte count spinner
+		for (int i = 1; i <= maxLength; i++) {
+			spnLengthAdapter.add(Integer.toString(i));
+		}
+
+		spnLength.setAdapter(spnLengthAdapter);
+		spnLength.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view,
+					int pos, long id) {
+				settings.length = Integer.parseInt(spnLength.getSelectedItem()
+						.toString());
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+				settings.length = 1;
+			}
+		});
+
+		spnDataMultiplierAdapter = ArrayAdapter
+				.createFromResource(this, R.array.spnDataMultiplier,
+						android.R.layout.simple_spinner_item);
+		spnDataMultiplierAdapter
+				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+		spnDataMultiplier.setAdapter(spnDataMultiplierAdapter);
+
+		// Setup the number base adapter
+		spnNumberBaseAdapter = ArrayAdapter.createFromResource(this,
+				R.array.spnNumberBase, android.R.layout.simple_spinner_item);
+		spnNumberBaseAdapter
+				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+		spnNumberBase.setAdapter(spnNumberBaseAdapter);
+		spnNumberBase.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view,
+					int pos, long id) {
+				if (MainActivity.this.bigValue == null)
+					return;
+				setRandomText();
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+				if (MainActivity.this.bigValue == null)
+					return;
+				setRandomText();
+			}
+
+		});
 	}
-	
+
+	public void onBtnCopyRandom(View view) {
+		if (randomString.isEmpty() || clipperData != null
+				&& clipperData.getItemAt(0).getText() == randomString)
+			return;
+
+		clipperData = ClipData.newPlainText("DroidBits", randomString);
+
+		clipper.setPrimaryClip(clipperData);
+
+		notifyToast("Data copied to clipboard.");
+	}
+
+	public void onBtnFetchRandom(View view) {
+
+		new AsyncTask<RandomAsyncSettings, Void, BigInteger>() {
+			@Override
+			protected BigInteger doInBackground(RandomAsyncSettings... params) {
+				RandomAsyncSettings settings = params[0];
+				randomX randomizer = settings.randomizer;
+				byte[] bytes = new byte[settings.length];
+
+				try {
+					for (int i = 0; i < settings.length; i++)
+						bytes[i] = randomizer.nextByte();
+				} catch (RuntimeException e) {
+					notifyToast(e.getMessage());
+				}
+
+				return new BigInteger(bytes);
+			}
+
+			@Override
+			protected void onPostExecute(BigInteger value) {
+				MainActivity.this.bigValue = value;
+
+				// Compensate for Java's averseness to unsigned number
+				// crunching.
+				bigValue = bigValue.abs().shiftLeft(1);
+				setRandomText();
+			}
+		}.execute(settings);
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-	
-	@Override
-	public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-		randomClassString = "randomX.random" + spnRandomSpinner.getSelectedItem().toString();
+
+	private void notifyToast(String message) {
+		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+	}
+
+	private void setRandomizer(String randomClassString) {
 		Class<?> randomType;
 
-//      <item>MCG</item>
-//      <item>LCG</item>
-//      <item>LEcuyer</item>
-//      <item>Java</item>
-//      <item>HotBits</item>
+		// <item>MCG</item>
+		// <item>LCG</item>
+		// <item>LEcuyer</item>
+		// <item>Java</item>
+		// <item>HotBits</item>
 
 		try {
-		
 			randomType = java.lang.Class.forName(randomClassString);
-			randomizer = (randomX)randomType.newInstance();
-
+			settings.randomizer = (randomX) randomType.newInstance();
 		} catch (ClassNotFoundException e) {
-			notifyToast("Class Not Found Error");
+			notifyToast(e.getMessage());
 		} catch (InstantiationException e) {
-			notifyToast("Class Instantiation Error");
+			notifyToast(e.getMessage());
 		} catch (IllegalAccessException e) {
-			notifyToast("Illegal Access Error");
+			notifyToast(e.getMessage());
 		}
 	}
-	
-	@Override
-	public void onNothingSelected(AdapterView<?> parent) {
-		randomizer = new randomJava();
-	}
+
 }

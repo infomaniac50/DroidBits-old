@@ -1,14 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">DroidBits</string>
     <string name="action_settings">Settings</string>
-    <string-array name="random_array">
+    <string name="spnRandomizerLabel">Choose Randomizer</string>
+    <string-array name="spnRandomizer">
         <item>MCG</item>
         <item>LCG</item>
         <item>LEcuyer</item>
         <item>Java</item>
         <item>HotBits</item>
     </string-array>
+    <string name="spnLengthLabel">Fetch:</string>
+    
+    
+    <string-array name="spnDataMultiplier">
+        <item>Bytes</item>
+        <item>Bits</item>
+    </string-array>
+    
+    <string name="spnNumberBaseLabel">as</string>
+    <string-array name="spnNumberBase">
+        <item>Dec</item>
+        <item>Oct</item>
+        <item>Hex</item>
+    </string-array>
 
+
+    <string name="btnFetchRandom">Get</string>
+    <string name="btnCopyRandom">Copy</string>
 </resources>
