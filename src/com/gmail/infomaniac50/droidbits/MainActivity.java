@@ -46,7 +46,9 @@ public class MainActivity extends Activity {
 	// <item>%o</item>
 	// <item>%02X</item>
 	// </string-array>
-	int[] numberBaseArray = new int[] { 10, 8, 16 };
+	int[] numberBaseArray = new int[] {
+			10, 8, 16
+	};
 
 	Spinner spnRandomizer;
 	Spinner spnLength;
@@ -55,124 +57,8 @@ public class MainActivity extends Activity {
 
 	TextView txtRandom;
 
-	private void setRandomText() {
-		// StringBuilder randomBuilder = new StringBuilder();
-
-		// String numberBase =
-		// numberBaseArray[spnNumberBase.getSelectedItemPosition()];
-
-		// randomBuilder.append(String.format(numberBase, value));
-
-		// randomString = randomBuilder.toString();
-
-		randomString = bigValue.toString(
-				numberBaseArray[spnNumberBase.getSelectedItemPosition()])
-				.toUpperCase(Locale.US);
-		txtRandom.setText(randomString);
-
-	}
-
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-
-		settings = new RandomAsyncSettings();
-		clipper = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-
-		// Reference the needed controls
-		txtRandom = (TextView) findViewById(R.id.txtRandom);
-
-		spnRandomizer = (Spinner) findViewById(R.id.spnRandomizer);
-		spnLength = (Spinner) findViewById(R.id.spnLength);
-		spnNumberBase = (Spinner) findViewById(R.id.spnNumberBase);
-		spnDataMultiplier = (Spinner) findViewById(R.id.spnDataMulitplier);
-
-		spnRandomizerAdapter = ArrayAdapter.createFromResource(this,
-				R.array.spnRandomizer, android.R.layout.simple_spinner_item);
-		spnRandomizerAdapter
-				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-		spnRandomizer.setAdapter(spnRandomizerAdapter);
-		spnRandomizer.setOnItemSelectedListener(new OnItemSelectedListener() {
-
-			@Override
-			public void onItemSelected(AdapterView<?> parent, View view,
-					int pos, long id) {
-				setRandomizer("randomX.random"
-						+ spnRandomizer.getSelectedItem().toString());
-			}
-
-			@Override
-			public void onNothingSelected(AdapterView<?> parent) {
-				setRandomizer(randomJava.class.toString());
-			}
-		});
-
-		// Make a new adapter for the number of bytes to fetch
-		spnLengthAdapter = new ArrayAdapter<CharSequence>(this,
-				android.R.layout.simple_spinner_item);
-		spnLengthAdapter
-				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-		// Populate the byte count spinner
-		for (int i = 1; i <= maxLength; i++) {
-			spnLengthAdapter.add(Integer.toString(i));
-		}
-
-		spnLength.setAdapter(spnLengthAdapter);
-		spnLength.setOnItemSelectedListener(new OnItemSelectedListener() {
-
-			@Override
-			public void onItemSelected(AdapterView<?> parent, View view,
-					int pos, long id) {
-				settings.length = Integer.parseInt(spnLength.getSelectedItem()
-						.toString());
-			}
-
-			@Override
-			public void onNothingSelected(AdapterView<?> parent) {
-				settings.length = 1;
-			}
-		});
-
-		spnDataMultiplierAdapter = ArrayAdapter
-				.createFromResource(this, R.array.spnDataMultiplier,
-						android.R.layout.simple_spinner_item);
-		spnDataMultiplierAdapter
-				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-		spnDataMultiplier.setAdapter(spnDataMultiplierAdapter);
-
-		// Setup the number base adapter
-		spnNumberBaseAdapter = ArrayAdapter.createFromResource(this,
-				R.array.spnNumberBase, android.R.layout.simple_spinner_item);
-		spnNumberBaseAdapter
-				.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-		spnNumberBase.setAdapter(spnNumberBaseAdapter);
-		spnNumberBase.setOnItemSelectedListener(new OnItemSelectedListener() {
-
-			@Override
-			public void onItemSelected(AdapterView<?> parent, View view,
-					int pos, long id) {
-				if (MainActivity.this.bigValue == null)
-					return;
-				setRandomText();
-			}
-
-			@Override
-			public void onNothingSelected(AdapterView<?> parent) {
-				if (MainActivity.this.bigValue == null)
-					return;
-				setRandomText();
-			}
-
-		});
-	}
-
 	public void onBtnCopyRandom(View view) {
-		if (randomString.isEmpty() || clipperData != null
-				&& clipperData.getItemAt(0).getText() == randomString)
+		if (randomString.isEmpty() || clipperData != null && clipperData.getItemAt(0).getText() == randomString)
 			return;
 
 		clipperData = ClipData.newPlainText("DroidBits", randomString);
@@ -194,7 +80,8 @@ public class MainActivity extends Activity {
 				try {
 					for (int i = 0; i < settings.length; i++)
 						bytes[i] = randomizer.nextByte();
-				} catch (RuntimeException e) {
+				}
+				catch (RuntimeException e) {
 					notifyToast(e.getMessage());
 				}
 
@@ -236,13 +123,113 @@ public class MainActivity extends Activity {
 		try {
 			randomType = java.lang.Class.forName(randomClassString);
 			settings.randomizer = (randomX) randomType.newInstance();
-		} catch (ClassNotFoundException e) {
-			notifyToast(e.getMessage());
-		} catch (InstantiationException e) {
-			notifyToast(e.getMessage());
-		} catch (IllegalAccessException e) {
+		}
+		catch (ClassNotFoundException e) {
 			notifyToast(e.getMessage());
 		}
+		catch (InstantiationException e) {
+			notifyToast(e.getMessage());
+		}
+		catch (IllegalAccessException e) {
+			notifyToast(e.getMessage());
+		}
+	}
+
+	private void setRandomText() {
+		// StringBuilder randomBuilder = new StringBuilder();
+
+		// String numberBase =
+		// numberBaseArray[spnNumberBase.getSelectedItemPosition()];
+
+		// randomBuilder.append(String.format(numberBase, value));
+
+		// randomString = randomBuilder.toString();
+
+		randomString = bigValue.toString(numberBaseArray[spnNumberBase.getSelectedItemPosition()]).toUpperCase(Locale.US);
+		txtRandom.setText(randomString);
+
+	}
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+
+		settings = new RandomAsyncSettings();
+		clipper = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+
+		// Reference the needed controls
+		txtRandom = (TextView) findViewById(R.id.txtRandom);
+
+		spnRandomizer = (Spinner) findViewById(R.id.spnRandomizer);
+		spnLength = (Spinner) findViewById(R.id.spnLength);
+		spnNumberBase = (Spinner) findViewById(R.id.spnNumberBase);
+		spnDataMultiplier = (Spinner) findViewById(R.id.spnDataMulitplier);
+
+		spnRandomizerAdapter = ArrayAdapter.createFromResource(this, R.array.spnRandomizer, android.R.layout.simple_spinner_item);
+		spnRandomizerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spnRandomizer.setAdapter(spnRandomizerAdapter);
+		spnRandomizer.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+				setRandomizer("randomX.random" + spnRandomizer.getSelectedItem().toString());
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+				setRandomizer(randomJava.class.toString());
+			}
+		});
+
+		// Make a new adapter for the number of bytes to fetch
+		spnLengthAdapter = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
+		spnLengthAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+		// Populate the byte count spinner
+		for (int i = 1; i <= maxLength; i++) {
+			spnLengthAdapter.add(Integer.toString(i));
+		}
+
+		spnLength.setAdapter(spnLengthAdapter);
+		spnLength.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+				settings.length = Integer.parseInt(spnLength.getSelectedItem().toString());
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+				settings.length = 1;
+			}
+		});
+
+		spnDataMultiplierAdapter = ArrayAdapter.createFromResource(this, R.array.spnDataMultiplier, android.R.layout.simple_spinner_item);
+		spnDataMultiplierAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+		spnDataMultiplier.setAdapter(spnDataMultiplierAdapter);
+
+		// Setup the number base adapter
+		spnNumberBaseAdapter = ArrayAdapter.createFromResource(this, R.array.spnNumberBase, android.R.layout.simple_spinner_item);
+		spnNumberBaseAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+		spnNumberBase.setAdapter(spnNumberBaseAdapter);
+		spnNumberBase.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
+				if (MainActivity.this.bigValue == null) return;
+				setRandomText();
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+				if (MainActivity.this.bigValue == null) return;
+				setRandomText();
+			}
+
+		});
 	}
 
 }
