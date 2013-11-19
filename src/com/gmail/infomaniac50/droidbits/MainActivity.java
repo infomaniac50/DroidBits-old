@@ -41,11 +41,6 @@ public class MainActivity extends Activity {
 	String randomString = "";
 	BigInteger bigValue;
 
-	// <string-array name="spnNumberBaseFormat">
-	// <item>%d</item>
-	// <item>%o</item>
-	// <item>%02X</item>
-	// </string-array>
 	int[] numberBaseArray = new int[] {
 			10, 8, 16
 	};
