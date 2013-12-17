@@ -3,12 +3,9 @@ package com.gmail.infomaniac50.droidbits;
 import java.math.BigInteger;
 import java.util.Locale;
 
-import randomX.randomJava;
-import randomX.randomX;
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
@@ -19,38 +16,53 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity {
+import com.gmail.infomaniac50.droidbits.RandomAsyncManager.AsyncResult;
 
-	private class RandomAsyncSettings {
-		public randomX randomizer;
-		public int length;
+public class MainActivity extends Activity {
+	private class RandomAsyncCallback implements AsyncCallback {
+		public void Complete(AsyncResult result) {
+			if (result.Success()) {
+				randomNumber = result.getBigInteger(true);
+				setRandomText();
+			}
+			else {
+				notifyToast(result.getError().getMessage());
+			}
+		}
 	}
 
-	final int maxLength = 99;
-
-	ArrayAdapter<CharSequence> spnRandomizerAdapter;
-	ArrayAdapter<CharSequence> spnLengthAdapter;
-	ArrayAdapter<CharSequence> spnNumberBaseAdapter;
-	ArrayAdapter<CharSequence> spnDataMultiplierAdapter;
-
-	ClipboardManager clipper;
-	ClipData clipperData;
-
-	RandomAsyncSettings settings;
-
-	String randomString = "";
-	BigInteger bigValue;
-
-	int[] numberBaseArray = new int[] {
+	private RandomAsyncCallback callback;
+	private ClipboardManager clipper;
+	private ClipData clipperData;
+	private RandomAsyncManager manager;
+	private static final int maxLength = 99;
+	private static final Integer[] spnLengthArray = new Integer[maxLength];
+	
+	static {
+		// Populate the byte count spinner
+		for (Integer i = 1; i <= maxLength; i++) {
+			spnLengthArray[i - 1] = i;
+		}
+	}
+	
+	private int[] numberBaseArray = new int[] {
 			10, 8, 16
 	};
+	private BigInteger randomNumber;
+	private String randomString = "";
+	private Spinner spnDataMultiplier;
 
-	Spinner spnRandomizer;
-	Spinner spnLength;
-	Spinner spnNumberBase;
-	Spinner spnDataMultiplier;
+	private ArrayAdapter<CharSequence> spnDataMultiplierAdapter;
+	private Spinner spnLength;
 
-	TextView txtRandom;
+	private ArrayAdapter<Integer> spnLengthAdapter;
+	private Spinner spnNumberBase;
+	private ArrayAdapter<CharSequence> spnNumberBaseAdapter;
+	private Spinner spnRandomizer;
+
+	private ArrayAdapter<CharSequence> spnRandomizerAdapter;
+
+	private TextView txtRandom;
 
 	public void onBtnCopyRandom(View view) {
 		if (randomString.isEmpty() || clipperData != null && clipperData.getItemAt(0).getText() == randomString)
@@ -64,35 +76,7 @@ public class MainActivity extends Activity {
 	}
 
 	public void onBtnFetchRandom(View view) {
-
-		new AsyncTask<RandomAsyncSettings, Void, BigInteger>() {
-			@Override
-			protected BigInteger doInBackground(RandomAsyncSettings... params) {
-				RandomAsyncSettings settings = params[0];
-				randomX randomizer = settings.randomizer;
-				byte[] bytes = new byte[settings.length];
-
-				try {
-					for (int i = 0; i < settings.length; i++)
-						bytes[i] = randomizer.nextByte();
-				}
-				catch (RuntimeException e) {
-					notifyToast(e.getMessage());
-				}
-
-				return new BigInteger(bytes);
-			}
-
-			@Override
-			protected void onPostExecute(BigInteger value) {
-				MainActivity.this.bigValue = value;
-
-				// Compensate for Java's averseness to unsigned number
-				// crunching.
-				bigValue = bigValue.abs().shiftLeft(1);
-				setRandomText();
-			}
-		}.execute(settings);
+		manager.run();
 	}
 
 	@Override
@@ -106,43 +90,11 @@ public class MainActivity extends Activity {
 		Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
 	}
 
-	private void setRandomizer(String randomClassString) {
-		Class<?> randomType;
-
-		// <item>MCG</item>
-		// <item>LCG</item>
-		// <item>LEcuyer</item>
-		// <item>Java</item>
-		// <item>HotBits</item>
-
-		try {
-			randomType = java.lang.Class.forName(randomClassString);
-			settings.randomizer = (randomX) randomType.newInstance();
-		}
-		catch (ClassNotFoundException e) {
-			notifyToast(e.getMessage());
-		}
-		catch (InstantiationException e) {
-			notifyToast(e.getMessage());
-		}
-		catch (IllegalAccessException e) {
-			notifyToast(e.getMessage());
-		}
-	}
-
 	private void setRandomText() {
-		// StringBuilder randomBuilder = new StringBuilder();
-
-		// String numberBase =
-		// numberBaseArray[spnNumberBase.getSelectedItemPosition()];
-
-		// randomBuilder.append(String.format(numberBase, value));
-
-		// randomString = randomBuilder.toString();
-
-		randomString = bigValue.toString(numberBaseArray[spnNumberBase.getSelectedItemPosition()]).toUpperCase(Locale.US);
-		txtRandom.setText(randomString);
-
+		if (randomNumber != null) {
+			randomString = randomNumber.toString(numberBaseArray[spnNumberBase.getSelectedItemPosition()]).toUpperCase(Locale.US);
+			txtRandom.setText(randomString);
+		}
 	}
 
 	@Override
@@ -150,7 +102,10 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		settings = new RandomAsyncSettings();
+		manager = RandomAsyncManager.getInstance();
+		callback = new RandomAsyncCallback();
+		manager.setCallback(callback);
+
 		clipper = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
 
 		// Reference the needed controls
@@ -168,35 +123,30 @@ public class MainActivity extends Activity {
 
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-				setRandomizer("randomX.random" + spnRandomizer.getSelectedItem().toString());
+				manager.getSettings().forgeRandomizer(spnRandomizer.getSelectedItem().toString());
 			}
 
 			@Override
 			public void onNothingSelected(AdapterView<?> parent) {
-				setRandomizer(randomJava.class.toString());
+				manager.getSettings().forgeRandomizer("");
 			}
 		});
 
 		// Make a new adapter for the number of bytes to fetch
-		spnLengthAdapter = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
+		spnLengthAdapter = new ArrayAdapter<Integer>(this, android.R.layout.simple_spinner_item, spnLengthArray);
 		spnLengthAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-		// Populate the byte count spinner
-		for (int i = 1; i <= maxLength; i++) {
-			spnLengthAdapter.add(Integer.toString(i));
-		}
 
 		spnLength.setAdapter(spnLengthAdapter);
 		spnLength.setOnItemSelectedListener(new OnItemSelectedListener() {
 
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-				settings.length = Integer.parseInt(spnLength.getSelectedItem().toString());
+				manager.getSettings().setLength((Integer)(spnLength.getSelectedItem()));
 			}
 
 			@Override
 			public void onNothingSelected(AdapterView<?> parent) {
-				settings.length = 1;
+				manager.getSettings().setLength(1);
 			}
 		});
 
@@ -214,13 +164,11 @@ public class MainActivity extends Activity {
 
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
-				if (MainActivity.this.bigValue == null) return;
 				setRandomText();
 			}
 
 			@Override
 			public void onNothingSelected(AdapterView<?> parent) {
-				if (MainActivity.this.bigValue == null) return;
 				setRandomText();
 			}
 
